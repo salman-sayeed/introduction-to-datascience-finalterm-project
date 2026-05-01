@@ -1,15 +1,23 @@
-# ==============================================================================
-# Project: Uncovering the Hidden Drivers of Student Depression: A Data Science Approach Using Lifestyle and
-# Behavioral Patterns
-# Section: H, Finalterm Project, Group 8
-# Dataset: https://www.kaggle.com/datasets/hopesb/student-depression-dataset
-# ==============================================================================
+---
+title: "Uncovering the Hidden Drivers of Student Depression: A Data Science Approach Using Lifestyle and Behavioral Patterns"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
 
 
-# List of only the required packages used in the script
+## Section: H, Finalterm Project, Group 8
+## Dataset: https://www.kaggle.com/datasets/hopesb/student-depression-dataset
+
+
+<br> <br>
+
+### Packages
+``` {r, }
 packages <- c("ggplot2", "dplyr", "readr", "corrplot", "moments")
 
-# Install any packages that are not already installed
 installed_packages <- rownames(installed.packages())
 for (pkg in packages) {
   if (!(pkg %in% installed_packages)) {
@@ -17,10 +25,172 @@ for (pkg in packages) {
   }
 }
 
-# Load necessary libraries
 library(readr)
 library(dplyr)
 library(ggplot2)
 library(corrplot)
 library(moments)
+```
 
+### A. Data Collection
+
+#### 1. Load the dataset
+```{r}
+options(timeout = 300)
+url <- "https://raw.githubusercontent.com/salman-sayeed/introduction-to-datascience-finalterm-project/refs/heads/main/Student%20Depression%20Dataset.csv"
+data <- read_csv(url)
+```
+#### 2. Display the first few rows
+First 6 rows of Dataset
+```{r}
+head(data)
+```
+
+### B. Data Exploration (EDA)
+#### 1. Dataset Overview 
+##### 1.1 Show shape
+```{r}
+cat("Dataset Shape: ", nrow(data), "rows x ", ncol(data), "\n")
+```
+
+##### 1.2. Display data types
+Data Types of each column:
+```{r}
+glimpse(data)
+```
+
+##### 1.3. Missing values
+Missing values per column:
+```{r}
+missing_summary <- colSums(is.na(data))
+print(missing_summary[missing_summary > 0])
+
+data_clean <- data %>% filter(complete.cases(.)) 
+sum(is.na(data_clean))
+```
+The dataset was checked for missing values across all variables to ensure data quality and consistency before analysis. Only 3 missing values were found out of approximately 27,900 rows. Given the extremely small proportion (<0.01%), these rows were removed. This does not introduce bias or affect statistical validity due to negligible data loss.
+
+##### 1.4. Type Classification
+```{r}
+num_vars_auto <- names(data_clean)[sapply(data_clean, is.numeric)]
+cat_vars_auto <- names(data_clean)[sapply(data_clean, is.character)]
+
+cat("\nNumerical Variables:\n", paste(num_vars_auto, collapse = ", "), "\n")
+cat("\nCategorical Variables:\n", paste(cat_vars_auto, collapse = ", "), "\n")
+```
+
+
+##### 1.5. Feature Grouping 
+- Numerical variables
+```{r}
+num_vars_manual <- c(
+  "Age",
+  "CGPA",
+  "Academic Pressure",
+  "Financial Stress",
+  "Work/Study Hours",
+  "Study Satisfaction",
+  "Job Satisfaction"
+)
+```
+- Categorical variables
+```{r}
+cat_vars_manual <- c(
+  "Gender",
+  "City",
+  "Degree",
+  "Sleep Duration",
+  "Dietary Habits"
+)
+```
+- Binary variables 
+```{r}
+binary_vars <- c(
+  "Have you ever had suicidal thoughts ?",
+  "Family History of Mental Illness"
+)
+```
+- Target variable 
+```{r}
+target_var <- "Depression"
+```
+-Removing spaces
+```{r}
+names(data_clean) <- make.names(names(data_clean))
+```
+#### 2. Target Variable Analysis
+Class balance check
+```{r}
+table(data_clean$Depression)
+data_clean$Depression <- as.factor(data_clean$Depression)
+```
+Class balance in percentage
+```{r}
+prop.table(table(data_clean$Depression)) * 100
+```
+```{r}
+ggplot(data_clean, aes(x = Depression)) +
+  geom_bar(fill = "steelblue") +
+  labs(
+    title = "Distribution of Student Depression",
+    x = "Depression Status (0 = No, 1 = Yes)",
+    y = "Count"
+  ) +
+  theme_minimal()
+```
+#### 3. Univariate Analysis
+
+##### 3.1. Age Distribution
+```{r}
+ggplot(data_clean, aes(x = Age)) +
+  geom_histogram(binwidth = 1, fill = "skyblue", color = "black") +
+  labs(
+    title = "Age Distribution of Students",
+    x = "Age",
+    y = "Count"
+  ) +
+  theme_minimal()
+```
+The age distribution shows that most students fall within the young adult range, primarily between late teens and mid 30s. This is expected in an academic dataset and indicates that the analysis focuses on a population that is highly relevant for studying student mental health patterns.
+
+##### 3.2. CGPA Distribution
+```{r}
+ggplot(data_clean, aes(x = CGPA)) +
+  geom_histogram(binwidth = 0.5, fill = "orange", color = "black") +
+  labs(
+    title = "CGPA Distribution",
+    x = "CGPA",
+    y = "Count"
+  ) +
+  theme_minimal()
+```
+The CGPA (on scale of 10) distribution shows variation in academic performance among students. Most students are concentrated in mid to high CGPA ranges, indicating moderate to good academic performance across the dataset.
+
+##### 3.3. Academic Pressure Distribution
+```{r}
+ggplot(data_clean, aes(x = Academic.Pressure)) +
+  geom_histogram(binwidth = 1, fill = "darkgreen", color = "black") +
+  labs(
+    title = "Academic Pressure Distribution",
+    x = "Academic Pressure",
+    y = "Count"
+  ) +
+  theme_minimal()
+```
+Academic pressure is distributed across different levels, with a noticeable concentration in moderate to high pressure ranges. This suggests that academic stress is a common factor among students and may play a significant role in mental health outcomes.
+
+##### 3.4. Financial Stress Distribution
+```{r}
+ggplot(data_clean, aes(x = Financial.Stress)) +
+  geom_histogram(binwidth = 1, fill = "purple", color = "black") +
+  labs(
+    title = "Financial Stress Distribution",
+    x = "Financial Stress",
+    y = "Count"
+  ) +
+  theme_minimal()
+```
+
+Financial pressure is moderare to high pressure. This suggests that financial stress is a common factor among students and may play a significant role in mental health outcomes.
+
+#### 4. Bivariate Analysis
