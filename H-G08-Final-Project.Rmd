@@ -1,0 +1,26 @@
+# ==============================================================================
+# Project: Uncovering the Hidden Drivers of Student Depression: A Data Science Approach Using Lifestyle and
+# Behavioral Patterns
+# Section: H, Finalterm Project, Group 8
+# Dataset: https://www.kaggle.com/datasets/hopesb/student-depression-dataset
+# ==============================================================================
+
+
+# List of only the required packages used in the script
+packages <- c("ggplot2", "dplyr", "readr", "corrplot", "moments")
+
+# Install any packages that are not already installed
+installed_packages <- rownames(installed.packages())
+for (pkg in packages) {
+  if (!(pkg %in% installed_packages)) {
+    install.packages(pkg)
+  }
+}
+
+# Load necessary libraries
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(corrplot)
+library(moments)
+
