@@ -80,17 +80,21 @@ cat("\nCategorical Variables:\n", paste(cat_vars_auto, collapse = ", "), "\n")
 ```
 
 
-##### 1.5. Feature Grouping 
+##### 1.5. Feature Grouping
+
+```{r}
+names(data_clean)
+```
 - Numerical variables
 ```{r}
 num_vars_manual <- c(
   "Age",
   "CGPA",
-  "Academic Pressure",
-  "Financial Stress",
-  "Work/Study Hours",
-  "Study Satisfaction",
-  "Job Satisfaction"
+  "Academic.Pressure",
+  "Financial.Stress",
+  "Work.Study.Hours",
+  "Study.Satisfaction",
+  "Job.Satisfaction"
 )
 ```
 - Categorical variables
@@ -99,15 +103,15 @@ cat_vars_manual <- c(
   "Gender",
   "City",
   "Degree",
-  "Sleep Duration",
-  "Dietary Habits"
+  "Sleep.Duration",
+  "Dietary.Habits"
 )
 ```
 - Binary variables 
 ```{r}
 binary_vars <- c(
-  "Have you ever had suicidal thoughts ?",
-  "Family History of Mental Illness"
+  "Have.you.ever.had.suicidal.thoughts..",
+  "Family.History.of.Mental.Illness"
 )
 ```
 - Target variable 
@@ -194,3 +198,167 @@ ggplot(data_clean, aes(x = Financial.Stress)) +
 Financial pressure is moderare to high pressure. This suggests that financial stress is a common factor among students and may play a significant role in mental health outcomes.
 
 #### 4. Bivariate Analysis
+##### 4.1 Academic Pressure vs Depression
+```{r}
+ggplot(data_clean, aes(x = Academic.Pressure, fill = Depression)) +
+  geom_bar(position = "fill") +
+  labs(
+    title = "Academic Pressure vs Depression",
+    x = "Academic Pressure",
+    y = "Proportion",
+    fill = "Depression"
+  ) +
+  theme_minimal()
+```
+The visualization shows a clear relationship between academic pressure and depression levels. As academic pressure increases, the proportion of students reporting depression also increases.
+
+##### 4.2 Sleep Duration vs Depression
+```{r}
+ggplot(data_clean, aes(x = Sleep.Duration, fill = Depression)) +
+  geom_bar(position = "fill") +
+  labs(
+    title = "Sleep Duration vs Depression",
+    x = "Sleep Duration",
+    y = "Proportion",
+    fill = "Depression"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+Students with shorter sleep durations tend to show a higher proportion of depression. This indicates a potential relationship between inadequate sleep and mental health deterioration. Sleep duration appears to be an important lifestyle factor influencing depression levels.
+
+##### 4.3 Financial Stress vs Depression 
+```{r}
+ggplot(data_clean, aes(x = Financial.Stress, fill = Depression)) +
+  geom_bar(position = "fill") +
+  labs(
+    title = "Financial Stress vs Depression",
+    x = "Financial Stress",
+    y = "Proportion",
+    fill = "Depression"
+  ) +
+  theme_minimal()
+```
+Higher financial stress levels are associated with a greater proportion of depression cases. This suggests that economic pressure plays a significant role in student mental health and may act as one of the key hidden drivers of depression.
+
+##### 4.4 Suicidal Thoughts vs Depression
+```{r}
+ggplot(data_clean, aes(x = Have.you.ever.had.suicidal.thoughts.., fill = Depression)) +
+  geom_bar(position = "fill") +
+  labs(
+    title = "Suicidal Thoughts vs Depression",
+    x = "Suicidal Thoughts",
+    y = "Proportion",
+    fill = "Depression"
+  ) +
+  theme_minimal()
+```
+There is a very strong association between suicidal thoughts and depression. Students who reported suicidal thoughts show a significantly higher proportion of depression cases. This variable appears to be one of the strongest indicators of mental health condition in the dataset.
+
+#### 4. Correlation Analysis
+corelation matrix 
+```{r}
+num_data <- data_clean[, num_vars_manual]
+corr_matrix <- cor(num_data, use = "complete.obs")
+print(corr_matrix)
+```
+Visualize correlation (Heatmap)
+```{r}
+library(corrplot)
+
+corrplot(corr_matrix, method = "color", type = "upper",
+         tl.col = "black", tl.srt = 45)
+```
+The correlation analysis reveals that most numerical variables exhibit weak relationships with one another, with no correlation exceeding 0.3. This indicates that each variable contributes independently to the analysis.
+
+A moderate positive relationship is observed between academic pressure and financial stress, indicating that students experiencing higher academic burden are also likely to face increased financial pressure. Additionally, academic pressure shows a negative relationship with study satisfaction, suggesting that increased pressure may reduce academic satisfaction levels.
+
+Interestingly, CGPA demonstrates minimal correlation with other variables, indicating that academic performance alone may not be a strong determinant of stress or mental health outcomes.
+
+Overall, the findings suggest that student depression is influenced by a combination of multiple weakly correlated factors rather than a single dominant variable, reinforcing the concept of “hidden drivers” explored in this study.
+
+### C. Data Preprocessing
+Ensure target is numeric 
+```{r}
+data_clean$Depression <- as.numeric(as.character(data_clean$Depression))
+```
+
+#### 1. Binary encoding
+``` {r}
+data_clean$Have.you.ever.had.suicidal.thoughts.. <- ifelse(
+  data_clean$Have.you.ever.had.suicidal.thoughts.. == "Yes", 1, 0
+)
+
+data_clean$Family.History.of.Mental.Illness <- ifelse(
+  data_clean$Family.History.of.Mental.Illness == "Yes", 1, 0
+)
+```
+
+#### 2. Catagorical Encoding
+```{r}
+data_clean$Gender <- as.factor(data_clean$Gender)
+data_clean$City <- as.factor(data_clean$City)
+data_clean$Degree <- as.factor(data_clean$Degree)
+data_clean$Sleep.Duration <- as.factor(data_clean$Sleep.Duration)
+data_clean$Dietary.Habits <- as.factor(data_clean$Dietary.Habits)
+```
+New Encoded Dataframe 
+```{r}
+data_encoded <- model.matrix(~ Gender + City + Degree + Sleep.Duration + Dietary.Habits - 1, data = data_clean)
+
+data_encoded <- as.data.frame(data_encoded)
+```
+
+#### 3. Combine with Numerical Data
+```{r}
+num_binary_data <- data_clean[, c(
+  "Age",
+  "CGPA",
+  "Academic.Pressure",
+  "Financial.Stress",
+  "Work.Study.Hours",
+  "Study.Satisfaction",
+  "Job.Satisfaction",
+  "Have.you.ever.had.suicidal.thoughts..",
+  "Family.History.of.Mental.Illness",
+  "Depression"
+)]
+```
+Final Dataframne
+```{r}
+final_data <- cbind(num_binary_data, data_encoded)
+```
+
+#### 4. Feature Scaling
+#### 4.1. Scale numerical columns
+```{r}
+numeric_cols <- c(
+  "Age",
+  "CGPA",
+  "Academic.Pressure",
+  "Financial.Stress",
+  "Work.Study.Hours",
+  "Study.Satisfaction",
+  "Job.Satisfaction"
+)
+
+final_data[numeric_cols] <- scale(final_data[numeric_cols])
+```
+
+
+Check structure
+```{r, include=FALSE}
+str(final_data)
+
+dim(final_data)
+```
+
+To prepare the dataset for modeling, several preprocessing steps were applied.
+
+Binary variables such as suicidal thoughts and family history of mental illness were encoded into numerical form (0 and 1). Categorical variables including gender, city, degree, sleep duration, and dietary habits were transformed using one-hot encoding to make them suitable for machine learning algorithms.
+
+Numerical variables were standardized using feature scaling to ensure that all features contribute equally to the model and prevent bias due to differences in scale.
+
+The final dataset was constructed by combining numerical, binary, and encoded categorical features into a single structured format suitable for modeling.
+
+### D. Modeling
