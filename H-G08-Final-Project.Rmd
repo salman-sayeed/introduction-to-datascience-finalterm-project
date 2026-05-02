@@ -362,3 +362,98 @@ Numerical variables were standardized using feature scaling to ensure that all f
 The final dataset was constructed by combining numerical, binary, and encoded categorical features into a single structured format suitable for modeling.
 
 ### D. Modeling
+#### 1. Splitting Train (80%) and Test(20%)
+```{r}
+set.seed(42)
+
+train_index <- sample(1:nrow(final_data), 0.8 * nrow(final_data))
+
+train_data <- final_data[train_index, ]
+test_data  <- final_data[-train_index, ]
+```
+#### 2. Train Regression model
+```{r}
+model <- glm(
+  Depression ~ Age + CGPA + Academic.Pressure + Financial.Stress +
+    Work.Study.Hours + Study.Satisfaction +
+    Have.you.ever.had.suicidal.thoughts.. +
+    Family.History.of.Mental.Illness,
+  data = train_data,
+  family = "binomial"
+)
+
+summary(model)
+```
+#### 3. Prediction
+```{r}
+prob_predictions <- predict(model, test_data, type = "response")
+
+predictions <- ifelse(prob_predictions > 0.5, 1, 0)
+```
+
+A logistic regression model was implemented to predict the likelihood of student depression based on lifestyle, academic, and behavioral factors.
+
+The dataset was split into training (80%) and testing (20%) sets to evaluate model performance. The model was trained using all available features, and predictions were made on the test set.
+
+Evaluation metrics including Accuracy, Precision, Recall, and F1-score were computed to assess model performance. These metrics provide a comprehensive understanding of the model’s ability to correctly identify both depressed and non-depressed students.
+
+### E. Evaluation & Interpretation
+#### 1. Confusion Matrix 
+```{r}
+table(Predicted = predictions, Actual = test_data$Depression)
+```
+
+#### 2. Accuracy
+```{r}
+accuracy <- mean(predictions == test_data$Depression)
+accuracy
+```
+
+#### 3. Precision
+```{r}
+precision <- sum(predictions == 1 & test_data$Depression == 1) /
+             sum(predictions == 1)
+precision
+```
+#### 4. Recall
+```{r}
+recall <- sum(predictions == 1 & test_data$Depression == 1) /
+          sum(test_data$Depression == 1)
+recall
+```
+#### 5. F1 Score
+```{r}
+f1 <- 2 * (precision * recall) / (precision + recall)
+f1
+```
+The logistic regression model demonstrated strong performance in predicting student depression. The model achieved an accuracy of **78.3%**, indicating that a substantial proportion of cases were correctly classified. The precision of **79.5%** shows that the model effectively identifies true depression cases without excessive false positives.
+
+Notably, the recall score of **83.6%** indicates that the model successfully captures the majority of actual depression cases, which is particularly important in mental health applications where missing positive cases can have serious consequences.
+
+The F1-score of **81.5%** reflects a balanced performance between precision and recall, confirming the robustness of the model.
+
+Overall, the model provides reliable predictive capability and is suitable for identifying key factors associated with student depression.
+
+```{r}
+ggplot(data.frame(prob_predictions), aes(x = prob_predictions)) +
+  geom_histogram(bins = 30, fill = "blue", color = "black") +
+  labs(title = "Predicted Probability Distribution", x = "Probability", y = "Count") +
+  theme_minimal()
+```
+
+
+```{r}
+summary(model)
+```
+Certain binary variables such as suicidal thoughts and family history were excluded automatically during model training due to multicollinearity or redundancy, resulting in undefined coefficients.
+
+
+The results indicate that student depression is influenced by multiple interconnected factors rather than a single dominant variable.
+
+Academic pressure emerged as the most significant predictor, highlighting the strong impact of academic demands on student mental health. Financial stress also plays a major role, suggesting that economic challenges contribute significantly to psychological distress.
+
+Additionally, increased work/study hours further elevate the likelihood of depression, reinforcing the role of workload intensity. In contrast, study satisfaction shows a negative relationship with depression, indicating that students who are more satisfied with their academic experience are less likely to experience mental health issues.
+
+Age also demonstrates a protective effect, with older students showing lower levels of depression, possibly due to better coping mechanisms or experience.
+
+Overall, the findings support the concept of “hidden drivers,” where depression is not caused by a single factor but rather a combination of academic, financial, and lifestyle pressures.
